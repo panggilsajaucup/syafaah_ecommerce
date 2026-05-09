@@ -1,5 +1,5 @@
 const SUPABASE_URL = 'https://wrwvnndslnfresgpfviy.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indyd3ZubmRzbG5mcmVzZ3BmdnkiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc0NTcxNDcwMywiZXhwIjoyMDYxMjkwNzAzfQ.eLiAiJCNHgPzHEzKT5KBbEJhpijQXHiLFkpGjHIoIEc';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indyd3ZubmRzbG5mcmVzZ3Bmdml5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyNTAzMDMsImV4cCI6MjA5MjgyNjMwM30.rA2eF4elc3wgXcm9_pjLLSA6fSq0BwIR6OIuT5q1-k8';
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
