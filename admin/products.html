@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Produk – Admin Syafa'ah</title>
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg" />
+  <link rel="stylesheet" href="../css/admin.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div class="admin-layout">
+  <!-- Sidebar -->
+  <aside class="admin-sidebar" id="admin-sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo" id="sidebar-logo">S</div>
+      <div>
+        <div class="sidebar-brand-name" id="sidebar-site-name">Syafa'ah</div>
+        <div class="sidebar-tagline">Admin Panel</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Menu Utama</div>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon">📊</span> Dashboard</a>
+      <a class="nav-item active" href="products.html"><span class="nav-icon">🛍️</span> Produk</a>
+      <a class="nav-item" href="settings.html"><span class="nav-icon">⚙️</span> Pengaturan</a>
+      <div class="nav-section-label">Lainnya</div>
+      <a class="nav-item" href="../index.html" target="_blank"><span class="nav-icon">🌐</span> Lihat Website</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar">👤</div>
+        <div>
+          <div class="user-name" id="admin-username">owner</div>
+          <div class="user-role">Administrator</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="adminLogout()">🚪 Keluar</button>
+    </div>
+  </aside>
+
+  <div class="sidebar-mob-overlay" id="sidebar-mob-overlay" onclick="toggleSidebar()"></div>
+
+  <!-- Main -->
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="hamburger btn-sm secondary" onclick="toggleSidebar()">☰</button>
+        <div class="topbar-title">Manajemen Produk</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-sm primary" onclick="openAddModal()">+ Tambah Produk</button>
+      </div>
+    </div>
+
+    <div class="page-content">
+      <!-- Filter -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;align-items:center;">
+        <input type="text" id="search-prod" placeholder="🔍 Cari produk..." style="height:38px;border:1.5px solid var(--sand);border-radius:20px;padding:0 16px;font-size:13.5px;outline:none;background:var(--white);width:220px;" oninput="filterProducts()" />
+        <select id="filter-cat" style="height:38px;border:1.5px solid var(--sand);border-radius:20px;padding:0 16px;font-size:13.5px;outline:none;background:var(--white);cursor:pointer;" onchange="filterProducts()">
+          <option value="">Semua Kategori</option>
+          <option>Mukena Anak</option>
+          <option>Mukena Dewasa</option>
+          <option>Gamis</option>
+          <option>Hijab</option>
+          <option>Koko Pria</option>
+          <option>Sarung</option>
+        </select>
+        <span id="prod-count" style="font-size:13px;color:var(--text-secondary);margin-left:4px;"></span>
+      </div>
+
+      <div class="admin-card">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Produk</th>
+                <th>Kategori</th>
+                <th>Varian & Harga</th>
+                <th>Ukuran</th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="products-tbody">
+              <tr><td colspan="6" style="text-align:center;padding:48px;color:var(--text-light);">
+                <div class="spinner" style="margin:0 auto 10px;"></div> Memuat...
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ===== ADD/EDIT PRODUCT MODAL ===== -->
+<div class="modal-overlay" id="product-modal">
+  <div class="modal-box lg">
+    <div class="modal-head">
+      <div class="modal-head-title" id="modal-title">Tambah Produk</div>
+      <button class="modal-head-close" onclick="closeProductModal()">✕</button>
+    </div>
+    <div class="modal-body-pad">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nama Produk *</label>
+          <input type="text" class="form-control" id="f-name" placeholder="Nama produk" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Kategori *</label>
+          <select class="form-control" id="f-category" onchange="onCategoryChange()">
+            <option value="">Pilih kategori</option>
+            <option>Mukena Anak</option>
+            <option>Mukena Dewasa</option>
+            <option>Gamis</option>
+            <option>Hijab</option>
+            <option>Koko Pria</option>
+            <option>Sarung</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Deskripsi Produk</label>
+        <textarea class="form-control" id="f-desc" rows="3" placeholder="Deskripsi singkat produk..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <div class="form-check">
+          <input type="checkbox" id="f-bestseller" />
+          <label for="f-bestseller">⭐ Tandai sebagai Best Seller</label>
+        </div>
+      </div>
+
+      <!-- Available Sizes -->
+      <div class="form-group">
+        <label class="form-label">Ukuran Tersedia</label>
+        <div class="sizes-checklist" id="sizes-checklist">
+          <!-- Rendered by JS -->
+        </div>
+        <div class="custom-size-wrap">
+          <input type="text" class="custom-size-input" id="custom-size-input" placeholder="Ukuran custom, contoh: XXXL" />
+          <button class="btn-add-custom-size" onclick="addCustomSize()">+ Tambah</button>
+        </div>
+        <div class="form-hint">Centang ukuran yang tersedia, atau tambahkan ukuran custom</div>
+      </div>
+
+      <!-- Variants -->
+      <div class="form-group">
+        <label class="form-label">Varian Produk</label>
+        <div class="variants-list" id="variants-list"></div>
+        <button class="btn-add-variant" onclick="addVariantRow()">+ Tambah Varian</button>
+      </div>
+
+      <!-- Size Guide -->
+      <div class="form-group" id="size-guide-wrap">
+        <label class="form-label" id="size-guide-label">Panduan Ukuran</label>
+        <div id="size-guide-rows"></div>
+        <button class="btn-add-size" onclick="addSizeRow()">+ Tambah Baris Ukuran</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sm secondary" onclick="closeProductModal()">Batal</button>
+      <button class="btn-sm primary" onclick="saveProduct()" id="save-btn">💾 Simpan Produk</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CONFIRM ===== -->
+<div class="confirm-dialog" id="confirm-dialog">
+  <div class="confirm-box">
+    <div class="confirm-icon">⚠️</div>
+    <div class="confirm-title" id="confirm-title">Hapus produk?</div>
+    <div class="confirm-desc" id="confirm-desc">Tindakan ini tidak dapat dibatalkan.</div>
+    <div class="confirm-btns">
+      <button class="btn-sm secondary" id="confirm-cancel-btn">Batal</button>
+      <button class="btn-sm danger" id="confirm-ok-btn">Ya, Hapus</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="admin-toast"></div>
+
+<script src="../js/supabase.js"></script>
+<script src="admin.js"></script>
+<script>
+checkAdminAuth();
+document.getElementById('admin-username').textContent = sessionStorage.getItem('admin_username') || 'owner';
+
+// ===== STATE =====
+let allProducts = [];
+let allVariants = [];
+let editingProductId = null;
+let variantRows = []; // [{id, name, price, discount, photoUrl}]
+let sizeGuideRows = []; // [{label, data:{...}}]
+let selectedSizes = [];
+const DEFAULT_SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'JUMBO'];
+let customSizes = [];
+
+// ===== LOAD =====
+async function init() {
+  await loadAdminBranding();
+  await loadProducts();
+
+  // Check if URL has ?edit=ID
+  const params = new URLSearchParams(window.location.search);
+  const editId = params.get('edit');
+  if (editId) {
+    const prod = allProducts.find(p => p.id == editId);
+    if (prod) openEditModal(prod);
+  }
+}
+
+async function loadProducts() {
+  const [pRes, vRes] = await Promise.all([
+    supabase.from('products').select('*').order('created_at', { ascending: false }),
+    supabase.from('product_variants').select('*')
+  ]);
+  allProducts = pRes.data || [];
+  allVariants = vRes.data || [];
+  renderTable(allProducts);
+  document.getElementById('prod-count').textContent = `${allProducts.length} produk`;
+}
+
+// ===== FILTER =====
+function filterProducts() {
+  const q = document.getElementById('search-prod').value.toLowerCase();
+  const cat = document.getElementById('filter-cat').value;
+  let filtered = allProducts;
+  if (q) filtered = filtered.filter(p => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q));
+  if (cat) filtered = filtered.filter(p => p.category === cat);
+  renderTable(filtered);
+  document.getElementById('prod-count').textContent = `${filtered.length} produk`;
+}
+
+// ===== RENDER TABLE =====
+function renderTable(products) {
+  const tbody = document.getElementById('products-tbody');
+  if (!products.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="admin-empty"><span>📦</span><p>Belum ada produk</p><button class="btn-sm primary" onclick="openAddModal()">+ Tambah Produk</button></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = products.map(p => {
+    const pvs = allVariants.filter(v => v.product_id === p.id);
+    const firstImg = pvs[0]?.photo_url;
+    const minPrice = pvs.length ? Math.min(...pvs.map(v => discountedPrice(v.original_price, v.discount_percent))) : 0;
+    return `<tr>
+      <td>
+        <div class="td-img-wrap">
+          ${firstImg ? `<img src="${firstImg}" class="td-img" alt="${p.name}" onerror="this.style.display='none'">` : '<div class="td-img" style="display:flex;align-items:center;justify-content:center;font-size:18px;opacity:.4;">👘</div>'}
+          <div class="td-name">${p.name}<small>ID: ${p.id}</small></div>
+        </div>
+      </td>
+      <td><span class="badge gold">${p.category}</span></td>
+      <td>${pvs.length} varian<br><small style="color:var(--text-light);">mulai ${pvs.length ? formatRupiah(minPrice) : '-'}</small></td>
+      <td>${(p.available_sizes || []).join(', ') || '<span style="color:var(--text-light);">-</span>'}</td>
+      <td>${p.is_best_seller ? '<span class="badge green">⭐ Best Seller</span>' : '<span class="badge gray">Regular</span>'}</td>
+      <td>
+        <div class="actions-cell">
+          <button class="icon-btn edit" onclick="openEditModal(allProducts.find(x=>x.id===${p.id}))" title="Edit">✏️</button>
+          <button class="icon-btn del" onclick="deleteProduct(${p.id}, '${p.name.replace(/'/g,"\\'")} ')" title="Hapus">🗑️</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ===== MODAL =====
+function openAddModal() {
+  editingProductId = null;
+  variantRows = [];
+  sizeGuideRows = [];
+  selectedSizes = [];
+  customSizes = [];
+  document.getElementById('modal-title').textContent = 'Tambah Produk';
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-category').value = '';
+  document.getElementById('f-desc').value = '';
+  document.getElementById('f-bestseller').checked = false;
+  renderSizesChecklist();
+  renderVariantsList();
+  renderSizeGuideRows();
+  document.getElementById('product-modal').classList.add('open');
+}
+
+function openEditModal(product) {
+  if (!product) return;
+  editingProductId = product.id;
+  document.getElementById('modal-title').textContent = 'Edit Produk';
+  document.getElementById('f-name').value = product.name;
+  document.getElementById('f-category').value = product.category;
+  document.getElementById('f-desc').value = product.description || '';
+  document.getElementById('f-bestseller').checked = product.is_best_seller;
+
+  // Sizes
+  const all_sizes = product.available_sizes || [];
+  const standard = DEFAULT_SIZES;
+  customSizes = all_sizes.filter(s => !standard.includes(s));
+  selectedSizes = [...all_sizes];
+  renderSizesChecklist();
+
+  // Variants
+  const pvs = allVariants.filter(v => v.product_id === product.id);
+  variantRows = pvs.map(v => ({ id: v.id, name: v.name, price: v.original_price, discount: v.discount_percent, photoUrl: v.photo_url || '' }));
+  renderVariantsList();
+
+  // Size guide
+  loadSizeGuide(product.id, product.category);
+  document.getElementById('product-modal').classList.add('open');
+}
+
+async function loadSizeGuide(productId, category) {
+  const { data } = await supabase.from('size_guides').select('*').eq('product_id', productId).order('sort_order');
+  sizeGuideRows = (data || []).map(g => ({ id: g.id, label: g.size_label, data: g.data }));
+  renderSizeGuideRows(category || document.getElementById('f-category').value);
+}
+
+function closeProductModal() {
+  document.getElementById('product-modal').classList.remove('open');
+  editingProductId = null;
+}
+
+// ===== SIZES CHECKLIST =====
+function renderSizesChecklist() {
+  const all = [...DEFAULT_SIZES, ...customSizes];
+  const el = document.getElementById('sizes-checklist');
+  el.innerHTML = all.map(s => `
+    <label class="size-chip ${selectedSizes.includes(s) ? 'checked' : ''}" onclick="toggleSize('${s}', this)">
+      <input type="checkbox" ${selectedSizes.includes(s) ? 'checked' : ''} /> ${s}
+    </label>
+  `).join('');
+}
+
+function toggleSize(size, el) {
+  if (selectedSizes.includes(size)) {
+    selectedSizes = selectedSizes.filter(s => s !== size);
+    el.classList.remove('checked');
+  } else {
+    selectedSizes.push(size);
+    el.classList.add('checked');
+  }
+}
+
+function addCustomSize() {
+  const val = document.getElementById('custom-size-input').value.trim();
+  if (!val) return;
+  if (!customSizes.includes(val) && !DEFAULT_SIZES.includes(val)) {
+    customSizes.push(val);
+    selectedSizes.push(val);
+  }
+  document.getElementById('custom-size-input').value = '';
+  renderSizesChecklist();
+}
+
+// ===== VARIANTS =====
+function renderVariantsList() {
+  const el = document.getElementById('variants-list');
+  el.innerHTML = variantRows.map((v, i) => `
+    <div class="variant-card-admin" id="variant-row-${i}">
+      <div class="variant-card-header">
+        ${v.photoUrl ? `<img src="${v.photoUrl}" class="variant-thumb" onerror="this.style.display='none'">` : '<div class="variant-thumb-placeholder">🎨</div>'}
+        <div class="variant-card-name">Varian ${i + 1}: ${v.name || '(belum diberi nama)'}</div>
+        <button class="variant-remove" onclick="removeVariant(${i})" title="Hapus varian">✕</button>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="margin-bottom:10px;">
+          <label class="form-label">Nama Varian *</label>
+          <input type="text" class="form-control" value="${v.name || ''}" placeholder="cth: Putih Motif Bunga" oninput="updateVariant(${i}, 'name', this.value)" />
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label class="form-label">Foto URL / Upload</label>
+          <input type="text" class="form-control" value="${v.photoUrl || ''}" placeholder="https://... atau upload file" oninput="updateVariant(${i}, 'photoUrl', this.value)" />
+          <div style="margin-top:6px;">
+            <input type="file" accept="image/*" onchange="handleVariantImageUpload(event, ${i})" style="font-size:12px;" />
+            <div class="form-hint">Upload gambar atau tempel URL langsung</div>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Harga Asli (Rp) *</label>
+          <input type="number" class="form-control" value="${v.price || ''}" placeholder="cth: 150000" oninput="updateVariant(${i}, 'price', parseFloat(this.value)||0)" />
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Diskon (%)</label>
+          <input type="number" class="form-control" value="${v.discount || 0}" min="0" max="100" placeholder="0" oninput="updateVariant(${i}, 'discount', parseFloat(this.value)||0)" />
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addVariantRow() {
+  variantRows.push({ id: null, name: '', price: 0, discount: 0, photoUrl: '' });
+  renderVariantsList();
+}
+
+function removeVariant(i) {
+  variantRows.splice(i, 1);
+  renderVariantsList();
+}
+
+function updateVariant(i, field, val) {
+  variantRows[i][field] = val;
+  // refresh name in header
+  document.querySelector(`#variant-row-${i} .variant-card-name`).textContent = `Varian ${i+1}: ${variantRows[i].name || '(belum diberi nama)'}`;
+}
+
+async function handleVariantImageUpload(event, variantIdx) {
+  const file = event.target.files[0];
+  if (!file) return;
+  showToast('⏳ Mengupload gambar...');
+  const url = await uploadImageFile(file, 'products');
+  if (url) {
+    variantRows[variantIdx].photoUrl = url;
+    renderVariantsList();
+    showToast('✅ Gambar berhasil diupload!');
+  } else {
+    // fallback to base64 preview
+    const b64 = await fileToBase64(file);
+    variantRows[variantIdx].photoUrl = b64;
+    renderVariantsList();
+    showToast('⚠️ Disimpan sebagai preview sementara (URL lebih disarankan)');
+  }
+}
+
+// ===== SIZE GUIDE =====
+function onCategoryChange() {
+  renderSizeGuideRows();
+}
+
+function getSizeGuideHeaders() {
+  const cat = document.getElementById('f-category').value;
+  const map = {
+    'Mukena Anak': ['Tinggi (cm)', 'Lebar (cm)', 'Untuk Usia'],
+    'Mukena Dewasa': ['Tinggi (cm)', 'Lebar (cm)', 'Untuk BB (kg)'],
+    'Gamis': ['Tinggi (cm)', 'Lebar Dada (cm)', 'Lebar Lengan (cm)', 'Panjang Lengan (cm)', 'Untuk BB (kg)'],
+    'Hijab': ['Panjang (cm)', 'Lebar Bawah (cm)', 'Diameter Muka (cm)'],
+    'Koko Pria': ['Panjang Badan (cm)', 'Lebar Dada (cm)', 'Lebar Lengan (cm)', 'Panjang Lengan (cm)'],
+    'Sarung': ['Tinggi (cm)', 'Lebar (cm)'],
+  };
+  return map[cat] || [];
+}
+
+function renderSizeGuideRows() {
+  const headers = getSizeGuideHeaders();
+  const wrap = document.getElementById('size-guide-wrap');
+  const label = document.getElementById('size-guide-label');
+  const cat = document.getElementById('f-category').value;
+
+  if (!headers.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  label.textContent = `Panduan Ukuran – ${cat}`;
+
+  const el = document.getElementById('size-guide-rows');
+  // Column headers row
+  el.innerHTML = `
+    <div style="display:flex;gap:8px;margin-bottom:6px;padding:0 2px;">
+      <div style="width:90px;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);">Ukuran</div>
+      ${headers.map(h => `<div style="flex:1;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);min-width:80px;">${h}</div>`).join('')}
+      <div style="width:30px;"></div>
+    </div>
+    <div id="size-guide-inner">
+      ${sizeGuideRows.map((row, i) => renderSizeRow(row, i, headers)).join('')}
+    </div>
+  `;
+}
+
+function renderSizeRow(row, i, headers) {
+  return `
+    <div class="size-row" id="sgrow-${i}">
+      <input type="text" value="${row.label || ''}" placeholder="cth: S" style="width:90px;flex:none;" oninput="updateSizeRow(${i}, 'label', this.value)" />
+      ${headers.map(h => `
+        <input type="text" value="${row.data?.[h] || ''}" placeholder="${h.split(' ')[0]}" style="flex:1;min-width:80px;" oninput="updateSizeRowData(${i}, '${h}', this.value)" />
+      `).join('')}
+      <button class="size-row-del" onclick="removeSizeRow(${i})" title="Hapus">✕</button>
+    </div>`;
+}
+
+function addSizeRow() {
+  sizeGuideRows.push({ id: null, label: '', data: {} });
+  renderSizeGuideRows();
+}
+
+function removeSizeRow(i) {
+  sizeGuideRows.splice(i, 1);
+  renderSizeGuideRows();
+}
+
+function updateSizeRow(i, field, val) { sizeGuideRows[i][field] = val; }
+function updateSizeRowData(i, header, val) {
+  if (!sizeGuideRows[i].data) sizeGuideRows[i].data = {};
+  sizeGuideRows[i].data[header] = val;
+}
+
+// ===== SAVE PRODUCT =====
+async function saveProduct() {
+  const name = document.getElementById('f-name').value.trim();
+  const category = document.getElementById('f-category').value;
+  const description = document.getElementById('f-desc').value.trim();
+  const is_best_seller = document.getElementById('f-bestseller').checked;
+
+  if (!name) { showToast('⚠️ Nama produk wajib diisi'); return; }
+  if (!category) { showToast('⚠️ Kategori wajib dipilih'); return; }
+  if (variantRows.length === 0) { showToast('⚠️ Tambahkan minimal 1 varian'); return; }
+  for (const v of variantRows) {
+    if (!v.name) { showToast('⚠️ Nama varian wajib diisi'); return; }
+    if (!v.price || v.price <= 0) { showToast('⚠️ Harga varian wajib diisi'); return; }
+  }
+
+  const saveBtn = document.getElementById('save-btn');
+  saveBtn.disabled = true;
+  saveBtn.textContent = '⏳ Menyimpan...';
+
+  try {
+    let productId = editingProductId;
+
+    const productData = { name, category, description, is_best_seller, available_sizes: selectedSizes, updated_at: new Date().toISOString() };
+
+    if (editingProductId) {
+      const { error } = await supabase.from('products').update(productData).eq('id', editingProductId);
+      if (error) throw error;
+    } else {
+      const { data, error } = await supabase.from('products').insert([productData]).select().single();
+      if (error) throw error;
+      productId = data.id;
+    }
+
+    // Handle variants
+    if (editingProductId) {
+      // Get existing variant IDs
+      const existingIds = allVariants.filter(v => v.product_id === editingProductId).map(v => v.id);
+      const newIds = variantRows.filter(v => v.id).map(v => v.id);
+      const toDelete = existingIds.filter(id => !newIds.includes(id));
+      if (toDelete.length) await supabase.from('product_variants').delete().in('id', toDelete);
+    }
+
+    for (const v of variantRows) {
+      const vData = { product_id: productId, name: v.name, original_price: v.price, discount_percent: v.discount || 0, photo_url: v.photoUrl || null };
+      if (v.id) {
+        await supabase.from('product_variants').update(vData).eq('id', v.id);
+      } else {
+        await supabase.from('product_variants').insert([vData]);
+      }
+    }
+
+    // Handle size guide
+    if (editingProductId) {
+      await supabase.from('size_guides').delete().eq('product_id', productId);
+    }
+    if (sizeGuideRows.length) {
+      await supabase.from('size_guides').insert(
+        sizeGuideRows.map((r, i) => ({ product_id: productId, size_label: r.label, data: r.data || {}, sort_order: i }))
+      );
+    }
+
+    showToast(editingProductId ? '✅ Produk berhasil diperbarui!' : '✅ Produk berhasil ditambahkan!');
+    closeProductModal();
+    await loadProducts();
+  } catch (err) {
+    console.error(err);
+    showToast('❌ Gagal menyimpan: ' + (err.message || 'Error tidak diketahui'));
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = '💾 Simpan Produk';
+  }
+}
+
+// ===== DELETE =====
+async function deleteProduct(id, name) {
+  showConfirm('Hapus Produk?', `Produk "${name}" akan dihapus permanen beserta semua variannya.`, async () => {
+    const { error } = await supabase.from('products').delete().eq('id', id);
+    if (error) { showToast('❌ Gagal menghapus produk'); return; }
+    showToast('✅ Produk berhasil dihapus');
+    await loadProducts();
+  });
+}
+
+init();
+</script>
+</body>
+</html>
